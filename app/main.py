@@ -37,8 +37,13 @@ class Ship:
     def fire(self, row: int, column: int) -> str:
         deck = self.get_deck(row, column)
 
-        if deck is None or not deck.is_alive:
+        if deck is None:
             return "Miss"
+
+        if not deck.is_alive:
+            if self.is_drowned:
+                return "Sunk!"
+            return "Hit!"
 
         deck.is_alive = False
 
@@ -51,16 +56,27 @@ class Ship:
 
 class Battleship:
     def __init__(self, ships: list) -> None:
-        self.ships = ships
-        self.field = {
-            element: Ship(start=element[0], end=element[1])
-            for element in self.ships
-        }
+        self.field = {}
+        for ship_coords in ships:
+            ship = Ship(start=ship_coords[0], end=ship_coords[1])
+            for deck in ship.decks:
+                self.field[(deck.row, deck.column)] = (deck, ship)
 
     def fire(self, location: tuple) -> str:
-        for ship in self.field.values():
-            result = ship.fire(*location)
-            if result != "Miss":
-                return result
-        else:
+        if location not in self.field:
             return "Miss!"
+
+        deck, ship = self.field[location]
+
+        if not deck.is_alive:
+            if ship.is_drowned:
+                return "Sunk!"
+            return "Hit!"
+
+        deck.is_alive = False
+
+        if not any(d.is_alive for d in ship.decks):
+            ship.is_drowned = True
+            return "Sunk!"
+
+        return "Hit!"
